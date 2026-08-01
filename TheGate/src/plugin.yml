@@ -1,0 +1,21 @@
+name: The_Gate
+version: 0.2.8mc1.21.4
+main: thegate.main.TheGateMain
+load: POSTWORLD
+authors: ['EndMySuffering', 'donner', 'lukas123313']
+api-version: 1.21
+
+commands:
+  Gatetools:
+    description: Opens the Gatetools UI.
+    usage: /gatetools
+    aliases: [gt]
+  TheGate:
+    description: Functional command to reload the config or display information.
+    usage: /thegate [reload|help|syncdb|gatedescription|gatename|create|rotate]
+    aliases: [tg]
+  
+softdepend:
+  - Multiverse-Core
+  - IridiumSkyblock
+  - Essentials
