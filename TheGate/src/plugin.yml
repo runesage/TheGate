@@ -1,9 +1,9 @@
 name: The_Gate
-version: 0.2.8mc1.21.4
+version: ${version}
 main: thegate.main.TheGateMain
 load: POSTWORLD
 authors: ['EndMySuffering', 'donner', 'lukas123313']
-api-version: 1.21
+api-version: '26.1'
 
 commands:
   Gatetools:
