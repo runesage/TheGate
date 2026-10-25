@@ -56,11 +56,17 @@ public class TheGateMain extends JavaPlugin implements Listener, PluginMessageLi
 	public LocalDateTime AutoSyncTime = LocalDateTime.now();
 
 
-	private static String[] supportedVersions = {"1.21.4"};
+	private static String[] supportedVersions = {"26.1"};
 	
+	@Override
+	public void onLoad() {
+		PackageManager.load(this);
+	}
+
 	@Override
 	public void onEnable() {
 		theGateMain = this;
+		PackageManager.enable();
 //		this.getLogger().log(Level.INFO, "");
 //		this.getLogger().log(Level.INFO, ChatColor.GREEN + "----------------------------------------------------------------------------");
 //		this.getLogger().log(Level.INFO, ChatColor.GRAY +   "\t\t┏━━━━━┓ ┏━┓ ┏━┓ ┏━━━━┓    ┏━━━━━━┓ ┏━━━━━┓ ┏━━━━━┓ ┏━━━━┓");
@@ -265,6 +271,8 @@ public class TheGateMain extends JavaPlugin implements Listener, PluginMessageLi
 			SaveLoadInterface.stopAsyncWorker();
 			SaveLoadInterface.closeConnection();
 		}
+
+		PackageManager.disable();
 	}
 	
 	@EventHandler
@@ -639,10 +647,10 @@ public class TheGateMain extends JavaPlugin implements Listener, PluginMessageLi
 	}
 	
 	public static boolean isServerCompatible() {
-		String serverVersion = TheGateMain.theGateMain.getServer().getVersion();
+		String serverVersion = TheGateMain.theGateMain.getServer().getMinecraftVersion();
 		boolean IsSupported = false;
 		for(String s : supportedVersions) {
-			if(serverVersion.contains(s)) IsSupported = true;
+			if(serverVersion.equals(s) || serverVersion.startsWith(s + ".")) IsSupported = true;
 		}
 		return IsSupported;
 	}
