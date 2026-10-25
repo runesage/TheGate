@@ -7,6 +7,7 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Semaphore;
@@ -175,6 +176,20 @@ public class DatabaseManager {
 		PreparedStatement statement = connection.prepareStatement(querry);
 		boolean out = statement.execute();
 		return out;
+	}
+	
+	/** Runs an INSERT and returns the generated id of the new row, or -1 if none was created. */
+	public long executeInsert(String querry, Object... params) throws SQLException {
+		Object[] values = new SqlStatement(querry, params).getParams();
+		try (PreparedStatement statement = connection.prepareStatement(querry, Statement.RETURN_GENERATED_KEYS)) {
+			for(int i = 0; i < values.length; i++) {
+				statement.setObject(i + 1, values[i]);
+			}
+			statement.executeUpdate();
+			try (ResultSet keys = statement.getGeneratedKeys()) {
+				return keys.next() ? keys.getLong(1) : -1;
+			}
+		}
 	}
 	
 	public int executeUpdate(String querry, Object... params) throws SQLException {

@@ -256,15 +256,19 @@ public class DBGateAccess {
 		this.dbAccess.asyncSqlStatement("DELETE FROM " + Globals.playerTable + " WHERE server_name=?;", Globals.ServerName);
 	}
 	
-	public boolean AddPlayerToTablePlayers(Player player, String address, String address_from) {
+	public void DeleteTransitRow(long id) {
+		this.dbAccess.asyncSqlStatement("DELETE FROM " + Globals.playerTable + " WHERE id = ?", id);
+	}
+	
+	/** Records a player going to another server and returns the row id, or -1 if it could not be saved. */
+	public long AddPlayerToTablePlayers(Player player, String address, String address_from) {
 		try {
 			double y = player.getLocation().getY() + 1.0;
-			int i =	dbAccess.executeUpdate("INSERT INTO " + Globals.playerTable + "(address, address_from, player_name, uuid, player_x, player_y, player_z, player_yaw, player_pitch, server_name) VALUES (?,?,?,?,?,?,?,?,?,?);",
+			return dbAccess.executeInsert("INSERT INTO " + Globals.playerTable + "(address, address_from, player_name, uuid, player_x, player_y, player_z, player_yaw, player_pitch, server_name) VALUES (?,?,?,?,?,?,?,?,?,?);",
 					address, address_from, player.getName(), player.getUniqueId().toString(), player.getLocation().getX(), y, player.getLocation().getZ(), player.getLocation().getYaw(), player.getLocation().getPitch(), Globals.ServerName);
-			return i > 0 ? true : false;
 		} catch (SQLException e) {
 			TheGateMain.theGateMain.getLogger().log(Level.WARNING, e.getMessage());
-			return false;
+			return -1;
 		}
 	}
 	

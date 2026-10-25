@@ -53,6 +53,9 @@ public class TheGateMain extends JavaPlugin implements Listener, PluginMessageLi
 
 	private int CooldownTimer = 100;
 	
+	// Longer than Velocity's default 30 second read timeout for joining a server.
+	private static final int TransitRowTimeout = 20 * 60;
+	
 	public LocalDateTime AutoSyncTime = LocalDateTime.now();
 
 
@@ -566,8 +569,9 @@ public class TheGateMain extends JavaPlugin implements Listener, PluginMessageLi
 									&& (GateMath.DistancePointPlane(new Vector(playerx, playery, playerz),
 											new Vector(x, y, z), vn) > -0.3D)) {
 
-								if(SaveLoadInterface.AddPlayerToTablePlayers(player, destinationGate.getAddress(),
-										myGate.getAddress())) {
+								long transitId = SaveLoadInterface.AddPlayerToTablePlayers(player, destinationGate.getAddress(),
+										myGate.getAddress());
+								if(transitId >= 0) {
 									myGate.dispach(CommandUseType.OnEnter, player);
 									reconnect.ReconnectPlayer(destinationGate.getServer(), e.getPlayer(), this);
 								}
@@ -579,10 +583,16 @@ public class TheGateMain extends JavaPlugin implements Listener, PluginMessageLi
 									public void run() {
 										OnCooldown.remove(player.getName());
 										InTransit.remove(player.getName());
-										SaveLoadInterface.DeleatePlayerFromTablePlayers(player);
+										// Still here, so the switch did not happen. Otherwise the destination
+										// server deletes the row when the player arrives, however long that takes.
+										if(player.isOnline()) SaveLoadInterface.DeleteTransitRow(transitId);
 									}
 
 								}.runTaskLater(this, CooldownTimer);
+								if(transitId >= 0) {
+									// Drop the row if the player never arrives, so a later join is not sent to the gate.
+									getServer().getScheduler().runTaskLater(this, () -> SaveLoadInterface.DeleteTransitRow(transitId), TransitRowTimeout);
+								}
 
 								this.getServer().getWorld(myGate.getWorldName()).playSound(myGate.getGate(), Globals.DefaultGateEnterSound,
 										Globals.DefaultGateEnterVolume, Globals.DefaultGateEnterPitch);
