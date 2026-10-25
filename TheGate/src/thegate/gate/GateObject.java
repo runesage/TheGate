@@ -178,6 +178,11 @@ public class GateObject{
 
 		GateObject otherGate = GateManager.getGateOnOtherServerWithAddress(Address);
 		if (otherGate != null) {
+			if(packages.Symbol == null || packages.Chevrons == null || packages.Ring == null) {
+				Repair();
+				this.setDialingout(true);
+				this.setDiled(Address);
+			}
 			dialingSingle = new AnimationDialingSingleGate(this, p, Address, player);
 		} else {
 			TheGateMain.theGateMain.getLogger().log(Level.WARNING, "[The Gate] nullpointer avoided (gateobject == null in dialing sequence)");
