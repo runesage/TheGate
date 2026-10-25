@@ -7,7 +7,6 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Semaphore;
@@ -30,7 +29,7 @@ public class DatabaseManager {
 	private boolean StatementThread = true;
 	private Semaphore lock = new Semaphore(1);
 	
-	private ArrayList<String> SQLStatements = new ArrayList<String>();
+	private ArrayList<SqlStatement> SQLStatements = new ArrayList<SqlStatement>();
 	
 	private DatabaseInfo dbInfo;
 	
@@ -120,15 +119,15 @@ public class DatabaseManager {
 	}
 	
 	private void executePendingStatements() {
-		List<String> pending;
+		List<SqlStatement> pending;
 		synchronized(this) {
 			if(SQLStatements.isEmpty()) return;
 			pending = new ArrayList<>(SQLStatements);
 			SQLStatements.clear();
 		}
 		try (Connection conn = openNewConnection()) {
-			for(String s : pending) {
-				try (PreparedStatement statement = conn.prepareStatement(s)) {
+			for(SqlStatement s : pending) {
+				try (PreparedStatement statement = prepare(conn, s.getSql(), s.getParams())) {
 					statement.execute();
 				} catch (SQLException e) {
 					e.printStackTrace();
@@ -149,14 +148,27 @@ public class DatabaseManager {
 		}
 	}
 	
-	public synchronized void asyncSqlStatements(List<String> list) {
+	public synchronized void asyncSqlStatements(List<SqlStatement> list) {
 		SQLStatements.addAll(list);
 		lock.release();
 	}
 	
-	public synchronized void asyncSqlStatement(String statement) {
+	public synchronized void asyncSqlStatement(SqlStatement statement) {
 		SQLStatements.add(statement);
 		lock.release();
+	}
+	
+	public void asyncSqlStatement(String sql, Object... params) {
+		asyncSqlStatement(new SqlStatement(sql, params));
+	}
+	
+	private static PreparedStatement prepare(Connection conn, String sql, Object... params) throws SQLException {
+		PreparedStatement statement = conn.prepareStatement(sql);
+		Object[] values = new SqlStatement(sql, params).getParams();
+		for(int i = 0; i < values.length; i++) {
+			statement.setObject(i + 1, values[i]);
+		}
+		return statement;
 	}
 	
 	public boolean executeQuerry(String querry) throws SQLException {
@@ -165,8 +177,8 @@ public class DatabaseManager {
 		return out;
 	}
 	
-	public int executeUpdate(String querry) throws SQLException {
-		PreparedStatement statement = connection.prepareStatement(querry);
+	public int executeUpdate(String querry, Object... params) throws SQLException {
+		PreparedStatement statement = prepare(connection, querry, params);
 		int out = statement.executeUpdate();
 		return out;
 	}
@@ -200,10 +212,8 @@ public class DatabaseManager {
 		}
 	}
 	
-	public ResultSet getData(String querry) throws SQLException {
-		Statement stmt = connection.createStatement();
-		ResultSet out = stmt.executeQuery(querry);
-		return out;
+	public ResultSet getData(String querry, Object... params) throws SQLException {
+		return prepare(connection, querry, params).executeQuery();
 	}
 	
 	public static DatabaseInfo getDatabaseInfo(String url, String name, String pass, DatabaseFormat format) {

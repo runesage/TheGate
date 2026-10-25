@@ -27,6 +27,7 @@ import thegate.main.ConfigManager;
 import thegate.main.Globals;
 import thegate.main.Perms;
 import thegate.main.TheGateMain;
+import thegate.main.save.SqlStatement;
 import thegate.math.GateMath;
 
 public class GateObject{
@@ -319,72 +320,82 @@ public class GateObject{
 		}
 	}
 
-	public String getInsertString() {
+	public SqlStatement getInsertStatement() {
 		String querry = "INSERT INTO "+ Globals.gatesTable +"(address, world, server_name, locx, locy, locz, chunkx, chunkz, has_dhd, dhdx, dhdy, dhdz, facing, dialingdisabled, open, ring, chevron_bot_material, chevron_light_material_off, chevron_light_material_on, chevron_frame_material, horizon_material, uuid, player_name, gate_name, description, primary_network, secundary_network, iriscode, irismaterial)"
-				+ " VALUES('" + getAddress() + "'" +
-				",'" + getWorldName() + "'" +
-				",'" + (getServer() == "" ? "none" : getServer()) + "'" +
-				"," + getGate().getX() +
-				"," + getGate().getY() +
-				"," + getGate().getZ() +
-				"," + getChunkX() +
-				"," + getChunkZ() +
-				"," + hasDHD() +
-				"," + (hasDHD() ? getDHD().getX() : 0) +
-				"," + (hasDHD() ? getDHD().getY() : 0) +
-				"," + (hasDHD() ? getDHD().getZ() : 0) +
-				"," + getFacing() +
-				"," + getBlockedState().ordinal() +
-				"," + isOpen() +
-				",'" + getRingMaterial() + "'" +
-				",'" + getChevron_botMaterial() + "'" +
-				",'" + getChevron_lightMaterial() + "'" +
-				",'" + getChevron_lightMaterial_on() + "'" +
-				",'" + getChevrons_frameMaterial() + "'" +
-				",'" + getHorizonMaterial() + "'" +
-				",'" + getOwnerUUID() + "'"+
-				",'" + getOwnerName().toString() + "'" +
-				",'" + getGateName() + "'" +
-				",'" + getDescription() + "'" +
-				",'" + getNetwork() + "'" +
-				",'" + getSecondaryNetwork()  + "'" +
-				",'" + getIrisCode() + "'" + 
-				",'" + getIrisMaterial() + "'" + ");";
-	
-		return querry;
+				+ " VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);";
+		return new SqlStatement(querry,
+				getAddress(),
+				getWorldName(),
+				getServerNameForDatabase(),
+				getGate().getX(),
+				getGate().getY(),
+				getGate().getZ(),
+				getChunkX(),
+				getChunkZ(),
+				hasDHD(),
+				(hasDHD() ? getDHD().getX() : 0),
+				(hasDHD() ? getDHD().getY() : 0),
+				(hasDHD() ? getDHD().getZ() : 0),
+				getFacing(),
+				getBlockedState().ordinal(),
+				isOpen(),
+				String.valueOf(getRingMaterial()),
+				String.valueOf(getChevron_botMaterial()),
+				String.valueOf(getChevron_lightMaterial()),
+				String.valueOf(getChevron_lightMaterial_on()),
+				String.valueOf(getChevrons_frameMaterial()),
+				String.valueOf(getHorizonMaterial()),
+				getOwnerUUID(),
+				getOwnerName().toString(),
+				getGateName(),
+				getDescription(),
+				getNetwork(),
+				getSecondaryNetwork(),
+				getIrisCode(),
+				String.valueOf(getIrisMaterial()));
 	}
 	
-	public String getUpdateString() {
-		return "UPDATE " + Globals.gatesTable + " SET world='" + getWorldName() + "'"
-				+ ", server_name='" + (getServer() == "" ? "'none'" : getServer()) +"'"
-				+ ", locx=" + getGate().getX()
-				+ ", locy=" + getGate().getY()
-				+ ", locz=" + getGate().getZ()
-				+ ", chunkx=" + getChunkX()
-				+ ", chunkz=" + getChunkZ()
-				+ ", has_dhd=" + hasDHD()
-				+ ", dhdx=" + (hasDHD() ? getDHD().getX() : 0)
-				+ ", dhdy=" + (hasDHD() ? getDHD().getY() : 0)
-				+ ", dhdz=" + (hasDHD() ? getDHD().getZ() : 0)
-				+ ", facing=" + getFacing()
-				+ ", dialingdisabled=" + getBlockedState().ordinal()
-				+ ", open=" + isOpen()
-				+ ", ring='" + getRingMaterial() + "'"
-				+ ", chevron_bot_material='" + getChevron_botMaterial() + "'"
-				+ ", chevron_light_material_off='" + getChevron_lightMaterial() + "'"
-				+ ", chevron_light_material_on='" + getChevron_lightMaterial_on() + "'"
-				+ ", chevron_frame_material='" + getChevrons_frameMaterial() + "'"
-				+ ", horizon_material='" + getHorizonMaterial() + "'"
-				+ ", uuid='" + getOwnerUUID() + "'"
-				+ ", player_name='" + getOwnerName().toString() + "'"
-				+ ", gate_name='" + getGateName() + "'"
-				+ ", description='" + getDescription() + "'"
-				+ ", primary_network='" + getNetwork() + "'"
-				+ ", secundary_network='" + getSecondaryNetwork()  + "'"
-				+ ", iriscode='" + getIrisCode() + "'"
-				+ ", irismaterial='" + getIrisMaterial() + "'"
-				+ ", usegateperm=" + isUseGatePerms()
-				+" WHERE address='" + getAddress() + "';";
+	public SqlStatement getUpdateStatement() {
+		String querry = "UPDATE " + Globals.gatesTable + " SET world=?, server_name=?, locx=?, locy=?, locz=?, chunkx=?, chunkz=?"
+				+ ", has_dhd=?, dhdx=?, dhdy=?, dhdz=?, facing=?, dialingdisabled=?, open=?"
+				+ ", ring=?, chevron_bot_material=?, chevron_light_material_off=?, chevron_light_material_on=?, chevron_frame_material=?, horizon_material=?"
+				+ ", uuid=?, player_name=?, gate_name=?, description=?, primary_network=?, secundary_network=?, iriscode=?, irismaterial=?, usegateperm=?"
+				+ " WHERE address=?;";
+		return new SqlStatement(querry,
+				getWorldName(),
+				getServerNameForDatabase(),
+				getGate().getX(),
+				getGate().getY(),
+				getGate().getZ(),
+				getChunkX(),
+				getChunkZ(),
+				hasDHD(),
+				(hasDHD() ? getDHD().getX() : 0),
+				(hasDHD() ? getDHD().getY() : 0),
+				(hasDHD() ? getDHD().getZ() : 0),
+				getFacing(),
+				getBlockedState().ordinal(),
+				isOpen(),
+				String.valueOf(getRingMaterial()),
+				String.valueOf(getChevron_botMaterial()),
+				String.valueOf(getChevron_lightMaterial()),
+				String.valueOf(getChevron_lightMaterial_on()),
+				String.valueOf(getChevrons_frameMaterial()),
+				String.valueOf(getHorizonMaterial()),
+				getOwnerUUID(),
+				getOwnerName().toString(),
+				getGateName(),
+				getDescription(),
+				getNetwork(),
+				getSecondaryNetwork(),
+				getIrisCode(),
+				String.valueOf(getIrisMaterial()),
+				isUseGatePerms(),
+				getAddress());
+	}
+	
+	private String getServerNameForDatabase() {
+		return getServer() == null || getServer().isEmpty() ? "none" : getServer();
 	}
 	
 	public void addCoOwner(String uuid, String name) {

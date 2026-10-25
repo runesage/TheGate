@@ -134,11 +134,10 @@ public class DBGateAccess {
 	}
 	
 	public Set<GateObject> GateListOtherServers() {
-		String SqlStatement = "SELECT * FROM " + Globals.gatesTable + " WHERE NOT server_name='" + Globals.ServerName + "'";
 		try {
 			
 			Set<GateObject> gates = new HashSet<>();
-			ResultSet rs = dbAccess.getData(SqlStatement);
+			ResultSet rs = dbAccess.getData("SELECT * FROM " + Globals.gatesTable + " WHERE NOT server_name=?", Globals.ServerName);
 			
 			while(rs.next()) {
 				gates.add(getGateObjectFromResultSet(rs));
@@ -151,26 +150,26 @@ public class DBGateAccess {
 	}
 	
 	public void SaveSingleGate(GateObject obj) {
-		dbAccess.asyncSqlStatement(obj.getInsertString());
+		dbAccess.asyncSqlStatement(obj.getInsertStatement());
 	}
 	
 	public void updateGate(GateObject obj) {
-		dbAccess.asyncSqlStatement(obj.getUpdateString());
+		dbAccess.asyncSqlStatement(obj.getUpdateStatement());
 	}
 	
 	public void saveGateCommand(String address, String command, CommandUseType type, CommandUser user) {
-		String querry = "INSERT INTO " + Globals.gatesCommandsTable + "(address, command, usetype, user) VALUES('" + address + "','" + command + "','" + type.ordinal() + "','" + user.ordinal() + "');";
-		dbAccess.asyncSqlStatement(querry);
+		String querry = "INSERT INTO " + Globals.gatesCommandsTable + "(address, command, usetype, user) VALUES(?,?,?,?);";
+		dbAccess.asyncSqlStatement(querry, address, command, type.ordinal(), user.ordinal());
 	}
 	
 	public void removeGateCommand(String address, String command, CommandUseType type) {
-		String querry = "DELETE FROM " + Globals.gatesCommandsTable + " WHERE address='" + address + "' AND command='" + command + "' AND usetype='" + type.ordinal() + "';";
-		dbAccess.asyncSqlStatement(querry);
+		String querry = "DELETE FROM " + Globals.gatesCommandsTable + " WHERE address=? AND command=? AND usetype=?;";
+		dbAccess.asyncSqlStatement(querry, address, command, type.ordinal());
 	}
 	
 	public ResultSet loadCommandsForGate(String address) {
 		try {
-			return dbAccess.getData("SELECT * FROM " + Globals.gatesCommandsTable + " WHERE address='" + address + "';");
+			return dbAccess.getData("SELECT * FROM " + Globals.gatesCommandsTable + " WHERE address=?;", address);
 		} catch (SQLException e) {
 			e.printStackTrace();
 			return null;
@@ -178,38 +177,32 @@ public class DBGateAccess {
 	}
 	
 	public void SaveDataFromSet(Set<GateObject> gates) {
-		List<String> querrys = new ArrayList<>();
+		List<SqlStatement> querrys = new ArrayList<>();
 		for(GateObject o : gates) {
 			if(o.isUpdated())
-				querrys.add(o.getUpdateString());
+				querrys.add(o.getUpdateStatement());
 		}
 		if(!querrys.isEmpty())
 			this.dbAccess.asyncSqlStatements(querrys);
 	}
 	
 	public void DeleateElementFromDatabase(GateObject obj) {
-		String querry = "DELETE FROM " + Globals.gatesTable + " WHERE address = '" + obj.getAddress() + "'";
-		dbAccess.asyncSqlStatement(querry);
+		dbAccess.asyncSqlStatement("DELETE FROM " + Globals.gatesTable + " WHERE address = ?", obj.getAddress());
 	}
 	
 	public void clearDatabase() {
-		String querry = "DELETE FROM " + Globals.gatesTable + ";";
-		String querry2 = "DELETE FROM " + Globals.coownerTable + ";";
+		SqlStatement querry = new SqlStatement("DELETE FROM " + Globals.gatesTable + ";");
+		SqlStatement querry2 = new SqlStatement("DELETE FROM " + Globals.coownerTable + ";");
 		dbAccess.asyncSqlStatements(Lists.newArrayList(querry, querry2));
 	}
 	
 	public void DeleatePlayerFromCoowner(String uuid, String address) {
-		String querry = "DELETE FROM " + Globals.coownerTable + " WHERE (uuid = '" + uuid + "' AND address = '" + address + "');";
-		dbAccess.asyncSqlStatement(querry);
+		dbAccess.asyncSqlStatement("DELETE FROM " + Globals.coownerTable + " WHERE (uuid = ? AND address = ?);", uuid, address);
 	}
 	
 	public void AddPlayerToCoowner(String uuid, String name, String address) {
-		String querry = "INSERT INTO " + Globals.coownerTable + "(address, player_name, uuid)"
-				+ " VALUES('" + address + "'" +
-				",'" + name + "'" +
-				",'" + uuid + "'" +
-				"); ";	
-		dbAccess.asyncSqlStatement(querry);
+		String querry = "INSERT INTO " + Globals.coownerTable + "(address, player_name, uuid) VALUES(?,?,?);";
+		dbAccess.asyncSqlStatement(querry, address, name, uuid);
 	}
 	
 	public void LoadCoowners(TheGateMain mg) {
@@ -228,12 +221,11 @@ public class DBGateAccess {
 	}
 	
 	public void DeleatePlayerFromTablePlayers(Player player) {
-		String querry = "DELETE FROM " + Globals.playerTable + " WHERE uuid = '" + player.getUniqueId() + "'";
-		this.dbAccess.asyncSqlStatement(querry);
+		this.dbAccess.asyncSqlStatement("DELETE FROM " + Globals.playerTable + " WHERE uuid = ?", player.getUniqueId().toString());
 	}
 	
 	public boolean hasPlayerInPlayersTable(Player player) {
-		try (ResultSet rs = dbAccess.getData("SELECT player_name FROM " + Globals.playerTable + " WHERE uuid = '" + player.getUniqueId() + "'")) {
+		try (ResultSet rs = dbAccess.getData("SELECT player_name FROM " + Globals.playerTable + " WHERE uuid = ?", player.getUniqueId().toString())) {
 			if(rs.next()) {
 				return true;
 			}else {
@@ -247,7 +239,7 @@ public class DBGateAccess {
 	}
 	
 	public boolean hasGateWithAddressInTableGates(String Address) {
-		try (ResultSet rs = dbAccess.getData("SELECT address FROM " + Globals.gatesTable + " WHERE address= '" + Address + "';")) {
+		try (ResultSet rs = dbAccess.getData("SELECT address FROM " + Globals.gatesTable + " WHERE address= ?;", Address)) {
 			if(rs.next()) {
 				return true;
 			}else {
@@ -261,14 +253,14 @@ public class DBGateAccess {
 	}
 	
 	public void ClearPlayerTable() {
-		String querry = "DELETE FROM " + Globals.playerTable + " WHERE server_name='"+Globals.ServerName+"';";
-		this.dbAccess.asyncSqlStatement(querry);
+		this.dbAccess.asyncSqlStatement("DELETE FROM " + Globals.playerTable + " WHERE server_name=?;", Globals.ServerName);
 	}
 	
 	public boolean AddPlayerToTablePlayers(Player player, String address, String address_from) {
 		try {
 			double y = player.getLocation().getY() + 1.0;
-			int i =	dbAccess.executeUpdate("INSERT INTO " + Globals.playerTable + "(address, address_from, player_name, uuid, player_x, player_y, player_z, player_yaw, player_pitch, server_name) VALUES ('"+ address +"', '"+ address_from +"' , '"+ player.getName() +"', '"+ player.getUniqueId() +"', '"+ player.getLocation().getX()+"', '"+ y +"', '" + player.getLocation().getZ()+"', '"+player.getLocation().getYaw()+"', '"+player.getLocation().getPitch()+"', '" + Globals.ServerName + "');");
+			int i =	dbAccess.executeUpdate("INSERT INTO " + Globals.playerTable + "(address, address_from, player_name, uuid, player_x, player_y, player_z, player_yaw, player_pitch, server_name) VALUES (?,?,?,?,?,?,?,?,?,?);",
+					address, address_from, player.getName(), player.getUniqueId().toString(), player.getLocation().getX(), y, player.getLocation().getZ(), player.getLocation().getYaw(), player.getLocation().getPitch(), Globals.ServerName);
 			return i > 0 ? true : false;
 		} catch (SQLException e) {
 			TheGateMain.theGateMain.getLogger().log(Level.WARNING, e.getMessage());
@@ -277,7 +269,7 @@ public class DBGateAccess {
 	}
 	
 	public PlayerServerData getPlayerDataFromPlayerTable(Player p) {
-		try (ResultSet rs = dbAccess.getData("SELECT * FROM " + Globals.playerTable + " WHERE player_name='"+ p.getName() +"';")) {
+		try (ResultSet rs = dbAccess.getData("SELECT * FROM " + Globals.playerTable + " WHERE player_name=?;", p.getName())) {
 			PlayerServerData psd = new PlayerServerData();
 			while(rs.next()) {
 				psd.setPlayerX(rs.getDouble("player_x"));
@@ -343,7 +335,7 @@ public class DBGateAccess {
 				+ " user INTEGER); ";
 		querry2 = Globals.SaveFromat.equalsIgnoreCase("sqlite") ? querry2.replace("{ID}", idSQLite) : querry2.replace("{ID}", idMYSQL);
 		querry3 = Globals.SaveFromat.equalsIgnoreCase("sqlite") ? querry3.replace("{ID}", idSQLite) : querry3.replace("{ID}", idMYSQL);
-		this.dbAccess.asyncSqlStatements(Lists.newArrayList(sql,querry2,querry3));
+		this.dbAccess.asyncSqlStatements(Lists.newArrayList(new SqlStatement(sql), new SqlStatement(querry2), new SqlStatement(querry3)));
 	}
 	
 	protected void createNewPlayerTable() {
