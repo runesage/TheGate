@@ -81,7 +81,8 @@ when they walk through a gate.
    The settings are still named `BungeeSettings` for compatibility with
    existing configs. They work with Velocity.
 
-Servers learn about gates on other servers at startup and on each database
-sync (`AutoSyncDatabase`, every 10 minutes by default). After building a
-gate, run `/thegate syncdb` on the other servers to make it dialable from
-them right away.
+When a gate is created, changed or removed, the other servers are told
+through the proxy and can dial it right away. Those messages travel over
+player connections, so a server with nobody online catches up when its first
+player joins. The periodic database sync (`AutoSyncDatabase`, every 10
+minutes by default) and `/thegate syncdb` remain as fallbacks.
