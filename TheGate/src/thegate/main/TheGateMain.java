@@ -583,14 +583,13 @@ public class TheGateMain extends JavaPlugin implements Listener, PluginMessageLi
 									public void run() {
 										OnCooldown.remove(player.getName());
 										InTransit.remove(player.getName());
-										// Still here, so the switch did not happen. Otherwise the destination
-										// server deletes the row when the player arrives, however long that takes.
-										if(player.isOnline()) SaveLoadInterface.DeleteTransitRow(transitId);
 									}
 
 								}.runTaskLater(this, CooldownTimer);
 								if(transitId >= 0) {
-									// Drop the row if the player never arrives, so a later join is not sent to the gate.
+									// The destination server deletes the row when the player arrives. The proxy keeps the
+									// player here until then, so being online is no sign the switch failed. Only drop the row
+									// once it is too old to belong to a switch still in progress.
 									getServer().getScheduler().runTaskLater(this, () -> SaveLoadInterface.DeleteTransitRow(transitId), TransitRowTimeout);
 								}
 

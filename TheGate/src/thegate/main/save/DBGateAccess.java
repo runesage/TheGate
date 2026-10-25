@@ -273,7 +273,7 @@ public class DBGateAccess {
 	}
 	
 	public PlayerServerData getPlayerDataFromPlayerTable(Player p) {
-		try (ResultSet rs = dbAccess.getData("SELECT * FROM " + Globals.playerTable + " WHERE player_name=?;", p.getName())) {
+		try (ResultSet rs = dbAccess.getData("SELECT * FROM " + Globals.playerTable + " WHERE player_name=? ORDER BY id;", p.getName())) {
 			PlayerServerData psd = new PlayerServerData();
 			while(rs.next()) {
 				psd.setPlayerX(rs.getDouble("player_x"));
