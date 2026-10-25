@@ -103,49 +103,40 @@ public class DatabaseManager {
 		}
 	}
 	
-	/*
-	 * TODO: Check out warning
-	 * Exception in thread "Thread-18" java.util.ConcurrentModificationException
-	 * at java.base/java.util.ArrayList$Itr.checkForComodification(ArrayList.java:1013)
-	 * at java.base/java.util.ArrayList$Itr.next(ArrayList.java:967)
-	 * at thegate.main.save.DatabaseManager.lambda$0(DatabaseManager.java:120)
-	 * at java.base/java.lang.Thread.run(Thread.java:831)
-	 * */
 	public void startAsyncWorker() {
 		SqlStatementThread = new Thread(() -> {
 			while(StatementThread) {
-				
 				try {
 					lock.acquire();
 				} catch (InterruptedException e) {
-					return;
+					break;
 				}
-				if(!StatementThread) return;
-				Connection conn;
-				try {
-					conn = openNewConnection();
-					ArrayList<String> toRemove = new ArrayList<>();
-					while(!SQLStatements.isEmpty()) {
-						for(String s : SQLStatements) {
-							try {
-								PreparedStatement statement = conn.prepareStatement(s);
-								statement.execute();
-								toRemove.add(s);
-							} catch (SQLException e) {
-								e.printStackTrace();
-							}
-						}
-						for(String s : toRemove) {
-							SQLStatements.remove(s);
-						}
-					}
-
-				} catch (SQLException e1) {
-					e1.printStackTrace();
-				}
+				executePendingStatements();
 			}
+			// Statements queued right before shutdown (like the final save) would otherwise be lost.
+			executePendingStatements();
 		});
 		SqlStatementThread.start();
+	}
+	
+	private void executePendingStatements() {
+		List<String> pending;
+		synchronized(this) {
+			if(SQLStatements.isEmpty()) return;
+			pending = new ArrayList<>(SQLStatements);
+			SQLStatements.clear();
+		}
+		try (Connection conn = openNewConnection()) {
+			for(String s : pending) {
+				try (PreparedStatement statement = conn.prepareStatement(s)) {
+					statement.execute();
+				} catch (SQLException e) {
+					e.printStackTrace();
+				}
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
 	}
 	
 	public void stopAsyncWorker() {

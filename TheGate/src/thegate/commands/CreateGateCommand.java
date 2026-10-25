@@ -13,6 +13,7 @@ import net.md_5.bungee.api.ChatColor;
 import thegate.gate.GateManager;
 import thegate.gate.GateObject;
 import thegate.main.Globals;
+import thegate.main.TheGateMain;
 import thegate.math.GateMath;
 
 public class CreateGateCommand {
@@ -28,6 +29,7 @@ public class CreateGateCommand {
 			GateObject go = new GateObject(loc, loc.getWorld().getName(), ((rot < 0.0f) ? GateMath.getPlayerDirection(p) : ((rot/360.0f)*4)), address, p.getUniqueId().toString(), p.getName());
 			go.setUpdated(true);
 			GateManager.addGate(go);
+			TheGateMain.SaveLoadInterface.SaveSingleGate(go);
 			p.sendMessage(ChatColor.GREEN+"Gate created!");
 		}else {
 			if(address.length() > 7 || address.length() < 7 || !checkAddress(address) || GateManager.getGateWithAddress(address) != null) {
@@ -45,6 +47,7 @@ public class CreateGateCommand {
 			GateObject gate = new GateObject(loc, world, r, address, "null", Globals.dummyOwnerName);
 			gate.setUpdated(true);
 			GateManager.addGate(gate);
+			TheGateMain.SaveLoadInterface.SaveSingleGate(gate);
 			Bukkit.getLogger().log(Level.INFO, "Gate: " + gate.getAddress() + " created.");
 			Bukkit.getLogger().log(Level.INFO, gate.toString());
 		}
