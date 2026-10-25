@@ -2,10 +2,13 @@ package thegate.main;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.logging.Level;
 
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
+import org.bukkit.Registry;
 import org.bukkit.Sound;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.Plugin;
@@ -91,31 +94,31 @@ public class Config {
 		Globals.PlayerGateAmmount = config.getInt("GateSettings.UserOwnedGates");
 		Globals.GateExclusionRadius = config.getInt("GateSettings.GateExclusionRadius");
 		
-		Globals.DefaultGateActivateSound = Sound.valueOf(config.getString("GateSoundSettings.Gate-Activate-Sound"));
+		Globals.DefaultGateActivateSound = parseSound(mainGate, config, "GateSoundSettings.Gate-Activate-Sound", Sound.ENTITY_EVOKER_CAST_SPELL);
 		Globals.DefaultGateActivateVolume = (float) config.getDouble("GateSoundSettings.Gate-Activate-Volume");
 		Globals.DefaultGateActivatePitch = (float) config.getDouble("GateSoundSettings.Gate-Activate-Pitch");
 		  
-		Globals.DefaultGateAmbientSound = Sound.valueOf(config.getString("GateSoundSettings.Gate-Ambient-Sound"));
+		Globals.DefaultGateAmbientSound = parseSound(mainGate, config, "GateSoundSettings.Gate-Ambient-Sound", Sound.BLOCK_WATER_AMBIENT);
 		Globals.DefaultGateAmbientVolume = (float) config.getDouble("GateSoundSettings.Gate-Ambient-Volume");
 		Globals.DefaultGateAmbientePitch = (float) config.getDouble("GateSoundSettings.Gate-Ambient-Pitch");
 		  
-		Globals.DefaultChevronLockSound = Sound.valueOf(config.getString("GateSoundSettings.Gate-ChevronLock-Sound"));
+		Globals.DefaultChevronLockSound = parseSound(mainGate, config, "GateSoundSettings.Gate-ChevronLock-Sound", Sound.BLOCK_PISTON_CONTRACT);
 		Globals.DefaultChevronLockVolume = (float) config.getDouble("GateSoundSettings.Gate-ChevronLock-Volume");
 		Globals.DefaultChevronLockPitch = (float) config.getDouble("GateSoundSettings.Gate-ChevronLock-Pitch");
 		  
-		Globals.DefaultChevronOpenSound = Sound.valueOf(config.getString("GateSoundSettings.Gate-ChevronOpen-Sound"));
+		Globals.DefaultChevronOpenSound = parseSound(mainGate, config, "GateSoundSettings.Gate-ChevronOpen-Sound", Sound.BLOCK_PISTON_EXTEND);
 		Globals.DefaultChevronOpenVolume = (float) config.getDouble("GateSoundSettings.Gate-ChevronOpen-Volume");
 		Globals.DefaultChevronOpenPitch = (float) config.getDouble("GateSoundSettings.Gate-ChevronOpen-Pitch");
 		  
-		Globals.DefaultSpinningSound = Sound.valueOf(config.getString("GateSoundSettings.Gate-DialingAmbient-Sound"));
+		Globals.DefaultSpinningSound = parseSound(mainGate, config, "GateSoundSettings.Gate-DialingAmbient-Sound", Sound.ENTITY_MINECART_RIDING);
 		Globals.DefaultSpinningVolume = (float) config.getDouble("GateSoundSettings.Gate-DialingAmbient-Volume");
 		Globals.DefaultSpinningPitch = (float) config.getDouble("GateSoundSettings.Gate-DialingAmbient-Pitch");
 		  
-		Globals.DefaultGateEnterSound = Sound.valueOf(config.getString("GateSoundSettings.Gate-Enter-Sound"));
+		Globals.DefaultGateEnterSound = parseSound(mainGate, config, "GateSoundSettings.Gate-Enter-Sound", Sound.AMBIENT_UNDERWATER_ENTER);
 		Globals.DefaultGateEnterVolume = (float) config.getDouble("GateSoundSettings.Gate-Enter-Volume");
 		Globals.DefaultGateEnterPitch = (float) config.getDouble("GateSoundSettings.Gate-Enter-Pitch");
 		  
-		Globals.DefaultGateExitSound = Sound.valueOf(config.getString("GateSoundSettings.Gate-Exit-Sound"));
+		Globals.DefaultGateExitSound = parseSound(mainGate, config, "GateSoundSettings.Gate-Exit-Sound", Sound.AMBIENT_UNDERWATER_EXIT);
 		Globals.DefaultGateExitVolume = (float) config.getDouble("GateSoundSettings.Gate-Exit-Volume");
 		Globals.DefaultGateExitPitch = (float) config.getDouble("GateSoundSettings.Gate-Exit-Pitch");
 
@@ -198,4 +201,28 @@ public class Config {
 		Globals.AllowDialSuggestions = config.getBoolean("GateSettings.AllowDialSuggestions");
 	}
 	
+
+	/**
+	 * Reads a sound by its old enum-style name (BLOCK_PISTON_EXTEND) or its
+	 * namespaced key (minecraft:block.piston.extend).
+	 */
+	private static Sound parseSound(Plugin plugin, FileConfiguration config, String path, Sound fallback) {
+		String value = config.getString(path);
+		if(value != null) {
+			if(value.contains(":") || value.contains(".")) {
+				NamespacedKey key = NamespacedKey.fromString(value.toLowerCase(Locale.ROOT));
+				Sound sound = key == null ? null : Registry.SOUND_EVENT.get(key);
+				if(sound != null) return sound;
+			} else {
+				try {
+					if(Sound.class.getField(value.toUpperCase(Locale.ROOT)).get(null) instanceof Sound sound) return sound;
+				} catch (ReflectiveOperationException e) {
+					// Not a known sound name, fall through to the warning.
+				}
+			}
+		}
+		plugin.getLogger().log(Level.WARNING, "Unknown sound '" + value + "' for " + path + ", using the default sound instead.");
+		return fallback;
+	}
+
 }
