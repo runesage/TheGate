@@ -29,6 +29,7 @@ import com.packageing.tools.packagetools.PackageManager;
 import com.packageing.tools.packagetools.entitys.ArmorStand;
 
 import bstats.Metrics;
+import thegate.bungee.GateSync;
 import thegate.bungee.PlayerServerData;
 import thegate.bungee.Reconnect;
 import thegate.commands.TheGateCommand;
@@ -199,6 +200,7 @@ public class TheGateMain extends JavaPlugin implements Listener, PluginMessageLi
 		getServer().getPluginManager().registerEvents(new InventoryManager(), this);
 		
 		this.getServer().getMessenger().registerOutgoingPluginChannel(this, "BungeeCord");
+		this.getServer().getMessenger().registerIncomingPluginChannel(this, "BungeeCord", this);
 
 		
 		if (SaveLoadInterface != null) {
@@ -306,6 +308,9 @@ public class TheGateMain extends JavaPlugin implements Listener, PluginMessageLi
 		}
 		
 		Player player = e.getPlayer();
+
+		// Gate change messages can't reach a server while it is empty, so catch up when it fills again.
+		if(Globals.UseBungee && getServer().getOnlinePlayers().size() == 1) GateSync.reloadGatesOnOtherServers();
 
 		ArmorStand stand = ArmorStand.CreateArmorStand(player.getLocation(), 0, 0, 0, 0);
 		stand.setHeadMaterial(new ItemStack(Material.STONE));
@@ -647,8 +652,8 @@ public class TheGateMain extends JavaPlugin implements Listener, PluginMessageLi
 	
 
 	@Override
-	public void onPluginMessageReceived(String arg0, Player arg1, byte[] arg2) {
-		
+	public void onPluginMessageReceived(String channel, Player player, byte[] message) {
+		if(channel.equals("BungeeCord")) GateSync.onMessage(message);
 	}
 	
 	public static String getVersion() {

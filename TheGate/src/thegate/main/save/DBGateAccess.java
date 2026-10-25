@@ -17,6 +17,7 @@ import org.bukkit.entity.Player;
 
 import com.google.common.collect.Lists;
 
+import thegate.bungee.GateSync;
 import thegate.bungee.PlayerServerData;
 import thegate.gate.BlockedState;
 import thegate.gate.CommandUseType;
@@ -151,10 +152,12 @@ public class DBGateAccess {
 	
 	public void SaveSingleGate(GateObject obj) {
 		dbAccess.asyncSqlStatement(obj.getInsertStatement());
+		dbAccess.asyncSqlStatement(SqlStatement.callback(GateSync::gatesChanged));
 	}
 	
 	public void updateGate(GateObject obj) {
 		dbAccess.asyncSqlStatement(obj.getUpdateStatement());
+		dbAccess.asyncSqlStatement(SqlStatement.callback(GateSync::gatesChanged));
 	}
 	
 	public void saveGateCommand(String address, String command, CommandUseType type, CommandUser user) {
@@ -182,12 +185,15 @@ public class DBGateAccess {
 			if(o.isUpdated())
 				querrys.add(o.getUpdateStatement());
 		}
-		if(!querrys.isEmpty())
+		if(!querrys.isEmpty()) {
+			querrys.add(SqlStatement.callback(GateSync::gatesChanged));
 			this.dbAccess.asyncSqlStatements(querrys);
+		}
 	}
 	
 	public void DeleateElementFromDatabase(GateObject obj) {
 		dbAccess.asyncSqlStatement("DELETE FROM " + Globals.gatesTable + " WHERE address = ?", obj.getAddress());
+		dbAccess.asyncSqlStatement(SqlStatement.callback(GateSync::gatesChanged));
 	}
 	
 	public void clearDatabase() {

@@ -8,6 +8,14 @@ public class SqlStatement {
 
 	private final String sql;
 	private final Object[] params;
+	private Runnable callback;
+	
+	/** A queue entry that runs once every statement queued before it has been executed. */
+	public static SqlStatement callback(Runnable callback) {
+		SqlStatement statement = new SqlStatement(null);
+		statement.callback = callback;
+		return statement;
+	}
 
 	public SqlStatement(String sql, Object... params) {
 		this.sql = sql;
@@ -25,6 +33,10 @@ public class SqlStatement {
 
 	public Object[] getParams() {
 		return params;
+	}
+	
+	public Runnable getCallback() {
+		return callback;
 	}
 
 }

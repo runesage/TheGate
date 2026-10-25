@@ -128,6 +128,10 @@ public class DatabaseManager {
 		}
 		try (Connection conn = openNewConnection()) {
 			for(SqlStatement s : pending) {
+				if(s.getCallback() != null) {
+					s.getCallback().run();
+					continue;
+				}
 				try (PreparedStatement statement = prepare(conn, s.getSql(), s.getParams())) {
 					statement.execute();
 				} catch (SQLException e) {
